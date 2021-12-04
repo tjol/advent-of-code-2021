@@ -8,3 +8,4 @@ debug/
 target/
 **/*.rs.bk
 *.pdb
+build/
