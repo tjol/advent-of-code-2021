@@ -4,7 +4,7 @@ use std::io::BufRead;
 #[derive(Debug, PartialEq, Eq)]
 enum BingoField {
     NotYet(i32),
-    Bingo(i32),
+    Bingo,
 }
 
 type BingoBoard = Vec<Vec<BingoField>>;
@@ -31,7 +31,7 @@ fn play_turn(board: &mut BingoBoard, num: i32) {
     for line in board {
         for item in line {
             if *item == BingoField::NotYet(num) {
-                *item = BingoField::Bingo(num);
+                *item = BingoField::Bingo;
             }
         }
     }
@@ -39,12 +39,9 @@ fn play_turn(board: &mut BingoBoard, num: i32) {
 
 fn is_bingo(board: &BingoBoard) -> bool {
     // Check the lines
-    board.iter().any(|line| line.iter().all(|f| matches!(f, BingoField::Bingo(_))))
+    board.iter().any(|line| line.iter().all(|f| *f == BingoField::Bingo))
     // Check the columns
-    || (0..5).any(|j| (0..5).all(|i| matches!(board[i][j], BingoField::Bingo(_))))
-    // // Check the diagonals
-    // || (0..5).all(|i| matches!(board[i][i], BingoField::Bingo(_)))
-    // || (0..5).all(|i| matches!(board[i][4-i], BingoField::Bingo(_)))
+    || (0..5).any(|j| (0..5).all(|i| board[i][j] == BingoField::Bingo))
 }
 
 fn calc_score(board: &BingoBoard, num: i32) -> i32 {
