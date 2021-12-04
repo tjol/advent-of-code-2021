@@ -2,5 +2,15 @@ ADVENT OF CODE 2021
 
 https://adventofcode.com/2021
 
-spoilers in this repo, obviously.
+Solved using a bunch of different languages, depending on what I feel like
+using for the problem on the day. How to build and run the solutions depends
+on the language.
 
+Let's see how far I get!
+
+Languages used
+
+ Day  1  -  Python, Befunge-98
+ Day  2  -  Rust, Befunge-98
+ Day  3  -  C
+ Day  4  -  Rust
