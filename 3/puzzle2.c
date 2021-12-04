@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define BITS (8 * sizeof(unsigned))
+#define BITS (8 * ((int)sizeof(unsigned)))
 
 int parse(FILE *stream, unsigned **numbersp, size_t *sizep)
 {
