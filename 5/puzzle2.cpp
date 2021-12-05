@@ -1,14 +1,14 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <string_view>
 #include <algorithm>
-#include <stdexcept>
-#include <functional>
-#include <numeric>
-#include <iomanip>
 #include <compare>
+#include <functional>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using Grid = std::vector<std::vector<int>>;
 
