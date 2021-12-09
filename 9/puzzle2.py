@@ -61,5 +61,12 @@ heightmap = np.array([[ord(c) - ord('0') for c in line.strip()] for line in sys.
 basins = flood(heightmap)
 # print(basins)
 sizes_list = sorted(basin_sizes(basins))
-# print(sizes_list)
 print(functools.reduce(operator.mul, sizes_list[-3:], 1))
+
+# from matplotlib import pyplot as plt
+# basins_f = basins.astype('float')
+# basins_f[basins_f == 0] = np.nan
+# plt.figure(figsize=(8, 8))
+# plt.axes((0, 0, 1, 1), frame_on=False)
+# plt.imshow(basins_f, cmap='gist_rainbow')
+# plt.savefig('basins.png')
