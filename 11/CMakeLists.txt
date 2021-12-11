@@ -13,3 +13,4 @@ endif()
 
 add_executable(puzzle1 puzzle1.c)
 add_executable(puzzle2 puzzle2.c)
+add_executable(interactive interactive.c)

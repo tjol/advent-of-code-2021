@@ -1,6 +1,6 @@
 use std::io::{stdin, BufRead};
 
-const SEGMENT_SETS: [u8; 10] = [
+const _SEGMENT_SETS: [u8; 10] = [
     0b01110111, // 0
     0b00100100, // 1
     0b01011101, // 2
