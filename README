@@ -3,11 +3,11 @@ ADVENT OF CODE 2021
 https://adventofcode.com/2021
 
 Solved using a bunch of different languages, depending on what I feel like
-using for the problem on the day. How to build and run the solutions depends
-on the language.
+using for the problem on the day.
 
 Each solution takes the input on standard input and produces the solution
-on standard output.
+on standard output. The script run-all.zsh compiles, runs and benchmarks all
+solutions.
 
 Let's see how far I get!
 
