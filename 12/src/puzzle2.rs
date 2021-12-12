@@ -39,7 +39,6 @@ impl fmt::Display for CaveId {
 struct Cave {
     id: CaveId,
     connected: Vec<usize>,
-    visits: usize,
 }
 
 impl Cave {
@@ -47,7 +46,6 @@ impl Cave {
         Self {
             id,
             connected: vec![],
-            visits: 0,
         }
     }
 }
@@ -103,41 +101,40 @@ impl CaveMap {
         }
     }
 
-    pub fn find_all_paths(self) -> usize {
+    pub fn find_all_paths(&self) -> usize {
         let start_idx = self.start_idx;
-        self.find_all_paths_from(start_idx)
+        self.find_all_paths_from(start_idx, vec![], false)
     }
 
-    fn find_all_paths_from(mut self, idx: usize) -> usize {
+    fn find_all_paths_from(
+        &self,
+        idx: usize,
+        mut visited_small: Vec<usize>,
+        mut used_joker: bool,
+    ) -> usize {
         // Is this the end?
         if idx == self.end_idx {
             return 1;
         }
-        // Find possible destinations
-        self.caves[idx].visits += 1;
-        if matches!(self.caves[idx].id, CaveId::Small(_)) && self.caves[idx].visits == 2 {
-            self.small_cave_twice_done = true;
-        }
-        let mut destinations = vec![];
-        for connected_idx in &self.caves[idx].connected {
-            match self.caves[*connected_idx].id {
-                CaveId::Start => {}
-                CaveId::Small(_) => {
-                    let prev_visits = self.caves[*connected_idx].visits;
-                    if prev_visits == 0 || (!self.small_cave_twice_done && prev_visits == 1) {
-                        destinations.push(connected_idx);
-                    }
+
+        let cave = &self.caves[idx];
+
+        if matches!(cave.id, CaveId::Small(_)) {
+            if visited_small.contains(&idx) {
+                if used_joker {
+                    return 0;
+                } else {
+                    used_joker = true;
                 }
-                _ => {
-                    destinations.push(connected_idx);
-                }
+            } else {
+                visited_small.push(idx);
             }
         }
 
-        // walk on
-        destinations
+        cave.connected
             .par_iter()
-            .map(|&i| self.clone().find_all_paths_from(*i))
+            .filter(|&i| self.caves[*i].id != CaveId::Start)
+            .map(|&i| self.find_all_paths_from(i, visited_small.clone(), used_joker))
             .sum()
     }
 }

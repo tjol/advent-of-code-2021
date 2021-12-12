@@ -4,6 +4,8 @@ use std::io::{stdin, BufRead};
 use std::ops::Deref;
 use std::str::FromStr;
 
+use rayon::prelude::*;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum CaveId {
     Start,
@@ -38,7 +40,6 @@ impl fmt::Display for CaveId {
 struct Cave {
     id: CaveId,
     connected: Vec<usize>,
-    visits: usize,
 }
 
 impl Cave {
@@ -46,7 +47,6 @@ impl Cave {
         Self {
             id,
             connected: vec![],
-            visits: 0,
         }
     }
 }
@@ -100,53 +100,37 @@ impl CaveMap {
         }
     }
 
-    pub fn find_all_paths(self) -> Vec<Vec<CaveId>> {
+    pub fn find_all_paths(&self) -> usize {
         let start_idx = self.start_idx;
-        self.find_all_paths_from(start_idx)
+        self.find_all_paths_from(start_idx, vec![])
     }
 
-    fn find_all_paths_from(mut self, idx: usize) -> Vec<Vec<CaveId>> {
+    fn find_all_paths_from(&self, idx: usize, mut visited_small: Vec<usize>) -> usize {
         // Is this the end?
         if idx == self.end_idx {
-            return vec![vec![CaveId::End]];
+            return 1;
         }
-        // Find possible destinations
-        self.caves[idx].visits += 1;
-        let mut destinations = vec![];
-        for connected_idx in &self.caves[idx].connected {
-            match self.caves[*connected_idx].id {
-                CaveId::Start => {}
-                CaveId::Small(_) => {
-                    if self.caves[*connected_idx].visits == 0 {
-                        destinations.push(connected_idx);
-                    }
-                }
-                _ => {
-                    destinations.push(connected_idx);
-                }
+
+        let cave = &self.caves[idx];
+
+        if matches!(cave.id, CaveId::Small(_)) {
+            if visited_small.contains(&idx) {
+                return 0;
+            } else {
+                visited_small.push(idx);
             }
         }
 
-        // walk on
-        let mut paths: Vec<Vec<CaveId>> = destinations
-            .into_iter()
-            .flat_map(|i| self.clone().find_all_paths_from(*i))
-            .collect();
-        for p in &mut paths {
-            p.push(self.caves[idx].id.clone());
-        }
-        paths
+        cave.connected
+            .par_iter()
+            .filter(|&i| self.caves[*i].id != CaveId::Start)
+            .map(|&i| self.find_all_paths_from(i, visited_small.clone()))
+            .sum()
     }
 }
 
 fn main() {
     let cave_map = CaveMap::from_lines(stdin().lock().lines().filter_map(|r| r.ok()));
     let paths = cave_map.find_all_paths();
-    // for p in paths {
-    //     for step in p.iter().rev() {
-    //         print!("{} ", step);
-    //     }
-    //     println!("");
-    // }
-    println!("{}", paths.len());
+    println!("{}", paths);
 }
