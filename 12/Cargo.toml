@@ -14,3 +14,4 @@ name = "puzzle2"
 path = "src/puzzle2.rs"
 
 [dependencies]
+rayon = "1.5.1"

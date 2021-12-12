@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fmt;
 use std::io::{stdin, BufRead};
@@ -102,15 +103,15 @@ impl CaveMap {
         }
     }
 
-    pub fn find_all_paths(self) -> Vec<Vec<CaveId>> {
+    pub fn find_all_paths(self) -> usize {
         let start_idx = self.start_idx;
         self.find_all_paths_from(start_idx)
     }
 
-    fn find_all_paths_from(mut self, idx: usize) -> Vec<Vec<CaveId>> {
+    fn find_all_paths_from(mut self, idx: usize) -> usize {
         // Is this the end?
         if idx == self.end_idx {
-            return vec![vec![CaveId::End]];
+            return 1;
         }
         // Find possible destinations
         self.caves[idx].visits += 1;
@@ -134,25 +135,15 @@ impl CaveMap {
         }
 
         // walk on
-        let mut paths: Vec<Vec<CaveId>> = destinations
-            .into_iter()
-            .flat_map(|i| self.clone().find_all_paths_from(*i))
-            .collect();
-        for p in &mut paths {
-            p.push(self.caves[idx].id.clone());
-        }
-        paths
+        destinations
+            .par_iter()
+            .map(|&i| self.clone().find_all_paths_from(*i))
+            .sum()
     }
 }
 
 fn main() {
     let cave_map = CaveMap::from_lines(stdin().lock().lines().filter_map(|r| r.ok()));
     let paths = cave_map.find_all_paths();
-    // for p in paths.iter() {
-    //     for step in p.iter().rev() {
-    //         print!("{} ", step);
-    //     }
-    //     println!("");
-    // }
-    println!("{}", paths.len());
+    println!("{}", paths);
 }
