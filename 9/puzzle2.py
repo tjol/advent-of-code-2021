@@ -2,6 +2,18 @@
 
 import sys
 import numpy as np
+import scipy.ndimage
+
+heightmap = np.array([np.char.array(line.strip(), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
+labels, n_features = scipy.ndimage.label(heightmap != 9)
+sizes = [np.count_nonzero(labels == i) for i in range(1, n_features+1)]
+sizes.sort()
+print(sizes[-1] * sizes[-2] * sizes[-3])
+
+
+'''
+import sys
+import numpy as np
 import functools
 import operator
 
@@ -70,3 +82,4 @@ print(functools.reduce(operator.mul, sizes_list[-3:], 1))
 # plt.axes((0, 0, 1, 1), frame_on=False)
 # plt.imshow(basins_f, cmap='gist_rainbow')
 # plt.savefig('basins.png')
+'''

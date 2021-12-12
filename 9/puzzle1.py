@@ -3,24 +3,14 @@
 import sys
 import numpy as np
 
-def neighbours(heightmap, i, j):
-    result = []
-    if i > 0:
-        result.append(heightmap[i-1, j])
-    if i < heightmap.shape[0] - 1:
-        result.append(heightmap[i+1, j])
-    if j > 0:
-        result.append(heightmap[i, j-1])
-    if j < heightmap.shape[1] - 1:
-        result.append(heightmap[i, j+1])
-    return np.array(result)
-
-def lowpoint_risklevels(heightmap):
-    for i in range(heightmap.shape[0]):
-        for j in range(heightmap.shape[1]):
-            h = heightmap[i,j]
-            if np.all(h < neighbours(heightmap, i, j)):
-                yield 1 + h
-
-heightmap = np.array([[ord(c) - ord('0') for c in line.strip()] for line in sys.stdin])
-print(sum(lowpoint_risklevels(heightmap)))
+input_map = np.array([np.char.array(line.strip(), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
+h, w = input_map.shape
+heightmap = np.zeros((h+2, w+2), dtype='u1')
+heightmap += 9
+main_map = heightmap[1:-1,1:-1]
+main_map[:,:] = input_map
+is_low = main_map < heightmap[:-2,1:-1]
+is_low &= main_map < heightmap[2:,1:-1]
+is_low &= main_map < heightmap[1:-1,:-2]
+is_low &= main_map < heightmap[1:-1,2:]
+print(np.sum(main_map[is_low] + 1))
