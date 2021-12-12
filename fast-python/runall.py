@@ -4,7 +4,7 @@ import sys
 import timeit
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).resolve().parent.parent
 input_files = {int(child.name): input_file
     for child in project_root.iterdir()
     if child.is_dir() and (input_file := child / 'input').is_file()}
