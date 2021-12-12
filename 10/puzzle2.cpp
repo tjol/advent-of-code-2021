@@ -4,6 +4,7 @@
 #include <optional>
 #include <iostream>
 #include <string>
+#include <numeric>
 
 enum class Bracket {
     curvy,
@@ -34,92 +35,53 @@ inline char closing_char(Bracket b)
     }
 }
 
-struct Chunk {
-    Bracket bracket;
-    std::vector<Chunk> children;
-};
 
-struct ParseResult {
-    std::string_view rest;
-    std::optional<Chunk> chunk;
-    char expected{'\0'};
-    std::vector<char> unclosed;
-};
-
-ParseResult read_one_chunk(std::string_view s)
+std::vector<Bracket> process(std::string_view s)
 {
-    auto bracket = parse_opening(s[0]);
-    if (bracket.has_value()) {
-        std::vector<char> unclosed;
-        Chunk c = { *bracket, {} };
-        auto closing = closing_char(c.bracket);
-        s.remove_prefix(1);
-        while (!s.empty()) {
-            if (closing == s[0]) {
-                // done
-                return {s.substr(1), c, 0, {}};
+    std::vector<Bracket> stack;
+    char closing = '\xff';
+
+    while (!s.empty()) {
+        char c = s[0];
+        if (c == closing) {
+            stack.pop_back();
+            closing = stack.empty() ? '\xff' : closing_char(stack.back());
+        } else {
+            // valid opening?
+            auto bracket = parse_opening(s[0]);
+            if (bracket.has_value()) {
+                stack.push_back(*bracket);
+                closing = closing_char(*bracket);
             } else {
-                // must be a chunk
-                auto result = read_one_chunk(s);
-                if (result.chunk.has_value()) {
-                    // good
-                    c.children.push_back(std::move(result.chunk).value());
-                    s = result.rest;
-                    unclosed.insert(unclosed.end(), result.unclosed.begin(), result.unclosed.end());
-                } else {
-                    // damn and blast
-                    if (result.expected == 0) {
-                        result.expected = closing;
-                    }
-                    return result;
-                }
+                // corrupt
+                return {};
             }
         }
-        // Empty string with unclosed chunk
-        unclosed.push_back(closing);
-        return {s, c, closing, std::move(unclosed)};
-    } else {
-        // invalid opening bracket
-        return {s, {}, 0, {}};
+        s.remove_prefix(1);
     }
+    return stack;
 }
 
 int main()
 {
     std::vector<long> scores;
-
     for (std::string line; std::getline(std::cin, line);) {
-        std::vector<Chunk> chunks;
-        std::string_view line_view{line};
-        while (!line_view.empty()) {
-            auto result = read_one_chunk(line_view);
-            if (result.chunk.has_value()) {
-                chunks.push_back(std::move(result.chunk).value());
-                line_view = result.rest;
-                if (!result.unclosed.empty()) {
-                    // std::string completion_string{result.unclosed.begin(), result.unclosed.end()};
-                    // std::cout << "incomplete: " << completion_string << "\n";
-                    long score = 0;
-                    for (char c : result.unclosed) {
-                        score *= 5;
-                        switch (c) {
-                        case ')': score += 1; break;
-                        case ']': score += 2; break;
-                        case '}': score += 3; break;
-                        case '>': score += 4; break;
-                        }
-                    }
-                    // std::cout << "score = " << score << '\n';
-                    scores.push_back(score);
-                    break;
-                }
-            } else {
-                // corrupt
-                // std::cout << "corrupt\n";
-                break;
-            }
-        }
+        auto stack = process(line);
 
+        long score = std::accumulate(stack.rbegin(), stack.rend(), 0L,
+            [](long score, Bracket b) {
+                score *= 5;
+                switch (b) {
+                case Bracket::curvy:  score += 1; break;
+                case Bracket::square: score += 2; break;
+                case Bracket::curly:  score += 3; break;
+                case Bracket::pointy: score += 4; break;
+                }
+                return score;
+            });
+
+        if (score != 0)
+            scores.push_back(score);
     }
 
     // take the median

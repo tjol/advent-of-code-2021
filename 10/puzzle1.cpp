@@ -33,82 +33,40 @@ inline char closing_char(Bracket b)
     }
 }
 
-struct Chunk {
-    Bracket bracket;
-    std::vector<Chunk> children;
-};
-
-struct ParseResult {
-    std::string_view rest;
-    std::optional<Chunk> chunk;
-    char expected{'\0'};
-};
-
-ParseResult read_one_chunk(std::string_view s)
+char process(std::string_view s)
 {
-    auto bracket = parse_opening(s[0]);
-    if (bracket.has_value()) {
-        Chunk c = { *bracket, {} };
-        auto closing = closing_char(c.bracket);
-        s.remove_prefix(1);
-        while (!s.empty()) {
-            if (closing == s[0]) {
-                // done
-                return {s.substr(1), c, 0};
+    std::vector<Bracket> stack;
+    char closing = '\xff';
+
+    while (!s.empty()) {
+        char c = s[0];
+        if (c == closing) {
+            stack.pop_back();
+            closing = stack.empty() ? '\xff' : closing_char(stack.back());
+        } else {
+            // valid opening?
+            auto bracket = parse_opening(s[0]);
+            if (bracket.has_value()) {
+                stack.push_back(*bracket);
+                closing = closing_char(*bracket);
             } else {
-                // must be a chunk
-                auto result = read_one_chunk(s);
-                if (result.chunk.has_value()) {
-                    // good
-                    c.children.push_back(std::move(result.chunk).value());
-                    s = result.rest;
-                } else {
-                    // damn and blast
-                    if (result.expected == 0) {
-                        result.expected = closing;
-                    }
-                    return result;
-                }
+                // corrupt
+                return c;
             }
         }
-        // Empty string with unclosed chunk
-        return {s, {}, closing};
-    } else {
-        // invalid opening bracket
-        return {s, {}, 0};
+        s.remove_prefix(1);
     }
+    return '\0';
 }
 
 int main()
 {
     int score = 0;
     for (std::string line; std::getline(std::cin, line);) {
-        char error_char = 0;
-        std::vector<Chunk> chunks;
-        std::string_view line_view{line};
-        while (!line_view.empty()) {
-            auto result = read_one_chunk(line_view);
-            if (result.chunk.has_value()) {
-                chunks.push_back(std::move(result.chunk).value());
-                line_view = result.rest;
-            } else {
-                // if (result.rest.empty()) {
-                //     std::cout << "Incomplete\n";
-                // } else {
-                //     std::cout << "Illegal " << result.rest[0];
-                //     if (result.expected != 0) {
-                //         std::cout << " (expected " << result.expected << ")";
-                //     }
-                //     std::cout << '\n';
-                // }
-                error_char = result.rest.empty() ? -1 : result.rest[0];
-                break;
-            }
-        }
+        auto error_char = process(line);
         switch (error_char) {
         case 0:
-            // std::cout << "valid\n";
-            break; // valid
+            break; // valid or incomplete
         case ')':
             score += 3;
             break;
@@ -120,9 +78,6 @@ int main()
             break;
         case '>':
             score += 25137;
-            break;
-        case -1:
-            // incomplete
             break;
         default:
             return 127;
