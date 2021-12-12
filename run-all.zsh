@@ -75,7 +75,7 @@ run_and_time () {
 aocroot="${0:a:h}"
 cd "$aocroot"
 
-dirs=($(print -l *(/) | sort -n))
+dirs=($(print -l *(/) | egrep '[0-9]+' | sort -n))
 
 for d in $dirs; do
     print "++++ " Building day $d
