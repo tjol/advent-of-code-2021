@@ -62,12 +62,14 @@ run_and_time () {
     result=$($executable <$input_file)
     # Do the time trial
     TIMEFMT="%*E"
-    duration100=$((time (
-        for i in {1..100}; do
+    duration_1=$((time $executable <$input_file >/dev/null 2>&1) 2>&1)
+    N=$(echo 0.5 / $duration_1 + 1 | bc)
+    duration_n=$((time (
+        for i in {1..$N}; do
             $executable <$input_file >/dev/null 2>&1
         done    
         )) 2>&1)
-    (( duration_ms = $duration100 * 10 ))
+    (( duration_ms = $duration_n * 1000 / $N ))
     print $duration_ms $result
 }
 
