@@ -1,0 +1,158 @@
+use std::collections::HashMap;
+use std::fmt;
+use std::io::{stdin, BufRead};
+use std::ops::Deref;
+use std::str::FromStr;
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum CaveId {
+    Start,
+    End,
+    Small(String),
+    Large(String),
+}
+
+impl FromStr for CaveId {
+    type Err = ();
+    fn from_str(s: &str) -> Result<CaveId, ()> {
+        match s {
+            "start" => Ok(CaveId::Start),
+            "end" => Ok(CaveId::End),
+            n if n.chars().next().unwrap().is_lowercase() => Ok(CaveId::Small(n.to_owned())),
+            n => Ok(CaveId::Large(n.to_owned())),
+        }
+    }
+}
+
+impl fmt::Display for CaveId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        match self {
+            CaveId::Start => "start".fmt(f),
+            CaveId::End => "end".fmt(f),
+            CaveId::Small(n) | CaveId::Large(n) => n.fmt(f),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Cave {
+    id: CaveId,
+    connected: Vec<usize>,
+    visits: usize,
+}
+
+impl Cave {
+    pub fn new(id: CaveId) -> Self {
+        Self {
+            id,
+            connected: vec![],
+            visits: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CaveMap {
+    caves: Vec<Cave>,
+    start_idx: usize,
+    end_idx: usize,
+    small_cave_twice_done: bool,
+}
+
+impl CaveMap {
+    pub fn from_lines<I, S>(lines: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Deref<Target = str>,
+    {
+        let mut caves = vec![];
+        let mut cave_indices = HashMap::new();
+        let mut start_idx = None;
+        let mut end_idx = None;
+        for l in lines {
+            let (from, to) = l.split_once('-').unwrap();
+            let from_id: CaveId = from.parse().unwrap();
+            let to_id: CaveId = to.parse().unwrap();
+            let from_idx = cave_indices.get(&from_id).copied().unwrap_or_else(|| {
+                let idx = caves.len();
+                caves.push(Cave::new(from_id.clone()));
+                cave_indices.insert(from_id.clone(), idx);
+                if from_id == CaveId::Start {
+                    start_idx = Some(idx);
+                }
+                idx
+            });
+            let to_idx = cave_indices.get(&to_id).copied().unwrap_or_else(|| {
+                let idx = caves.len();
+                caves.push(Cave::new(to_id.clone()));
+                cave_indices.insert(to_id.clone(), idx);
+                if to_id == CaveId::End {
+                    end_idx = Some(idx);
+                }
+                idx
+            });
+            caves[from_idx].connected.push(to_idx);
+            caves[to_idx].connected.push(from_idx);
+        }
+        Self {
+            caves,
+            start_idx: start_idx.expect("there must be a start"),
+            end_idx: end_idx.expect("there must be an end"),
+            small_cave_twice_done: false,
+        }
+    }
+
+    pub fn find_all_paths(self) -> Vec<Vec<CaveId>> {
+        let start_idx = self.start_idx;
+        self.find_all_paths_from(start_idx)
+    }
+
+    fn find_all_paths_from(mut self, idx: usize) -> Vec<Vec<CaveId>> {
+        // Is this the end?
+        if idx == self.end_idx {
+            return vec![vec![CaveId::End]];
+        }
+        // Find possible destinations
+        self.caves[idx].visits += 1;
+        if matches!(self.caves[idx].id, CaveId::Small(_)) && self.caves[idx].visits == 2 {
+            self.small_cave_twice_done = true;
+        }
+        let mut destinations = vec![];
+        for connected_idx in &self.caves[idx].connected {
+            match self.caves[*connected_idx].id {
+                CaveId::Start => {}
+                CaveId::Small(_) => {
+                    let prev_visits = self.caves[*connected_idx].visits;
+                    if prev_visits == 0 || (!self.small_cave_twice_done && prev_visits == 1) {
+                        destinations.push(connected_idx);
+                    }
+                }
+                _ => {
+                    destinations.push(connected_idx);
+                }
+            }
+        }
+
+        // walk on
+        let mut paths: Vec<Vec<CaveId>> = destinations
+            .into_iter()
+            .flat_map(|i| self.clone().find_all_paths_from(*i))
+            .collect();
+        for p in &mut paths {
+            p.push(self.caves[idx].id.clone());
+        }
+        paths
+    }
+}
+
+fn main() {
+    let cave_map = CaveMap::from_lines(stdin().lock().lines().filter_map(|r| r.ok()));
+    let paths = cave_map.find_all_paths();
+    // for p in paths.iter() {
+    //     for step in p.iter().rev() {
+    //         print!("{} ", step);
+    //     }
+    //     println!("");
+    // }
+    println!("{}", paths.len());
+}
