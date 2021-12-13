@@ -1,11 +1,22 @@
 #include <string>
 #include <iostream>
-#include <set>
+#include <unordered_set>
 #include <tuple>
 #include <algorithm>
+#include <functional>
+
+namespace std {
+    template<>
+    struct hash<std::tuple<int, int>> {
+        size_t operator()(const std::tuple<int, int>& t) const noexcept {
+            const auto& [i, j] = t;
+            return (hash<int>{}(i) << 1) ^ hash<int>{}(j);
+        }
+    };
+}
 
 template<int axis>
-void fold(std::set<std::tuple<int,int>>& points, int boundary)
+void fold(std::unordered_set<std::tuple<int,int>>& points, int boundary)
 {
     auto iter = points.begin();
     while (iter != points.end()) {
@@ -22,7 +33,7 @@ void fold(std::set<std::tuple<int,int>>& points, int boundary)
     }
 }
 
-std::tuple<int, int> get_size(const std::set<std::tuple<int,int>>& points)
+std::tuple<int, int> get_size(const std::unordered_set<std::tuple<int,int>>& points)
 {
     auto max_x = std::get<0>(*std::max_element(points.begin(), points.end(),
         [](const auto& a, const auto& b) {
@@ -35,7 +46,7 @@ std::tuple<int, int> get_size(const std::set<std::tuple<int,int>>& points)
     return {max_x + 1, max_y + 1};
 }
 
-std::string to_string(const std::set<std::tuple<int,int>>& points)
+std::string to_string(const std::unordered_set<std::tuple<int,int>>& points)
 {
     auto [w, h] = get_size(points);
     // std::cout << "size " << w << ',' << h << '\n';
@@ -50,7 +61,7 @@ std::string to_string(const std::set<std::tuple<int,int>>& points)
 
 int main ()
 {
-    std::set<std::tuple<int,int>> points;
+    std::unordered_set<std::tuple<int,int>> points;
     for (std::string line; std::getline(std::cin, line) && !line.empty();) {
         auto comma_idx = line.find(',');
         int x = std::stoi(line.substr(0, comma_idx));

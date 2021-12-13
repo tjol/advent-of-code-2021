@@ -1,10 +1,21 @@
 #include <string>
 #include <iostream>
-#include <set>
+#include <unordered_set>
 #include <tuple>
+#include <functional>
+
+namespace std {
+    template<>
+    struct hash<std::tuple<int, int>> {
+        size_t operator()(const std::tuple<int, int>& t) const noexcept {
+            const auto& [i, j] = t;
+            return (hash<int>{}(i) << 1) ^ hash<int>{}(j);
+        }
+    };
+}
 
 template<int axis>
-void fold(std::set<std::tuple<int,int>>& points, int boundary)
+void fold(std::unordered_set<std::tuple<int,int>>& points, int boundary)
 {
     auto iter = points.begin();
     while (iter != points.end()) {
@@ -23,7 +34,7 @@ void fold(std::set<std::tuple<int,int>>& points, int boundary)
 
 int main ()
 {
-    std::set<std::tuple<int,int>> points;
+    std::unordered_set<std::tuple<int,int>> points;
     for (std::string line; std::getline(std::cin, line) && !line.empty();) {
         auto comma_idx = line.find(',');
         int x = std::stoi(line.substr(0, comma_idx));
