@@ -27,11 +27,13 @@ import day09
 import day10
 import day11
 import day12
+import day13
 
 def benchmark_day(day_nr, day_module):
     p1, p2 = day_module.run(inputs[day_nr-1])
     print(f'Day {day_nr} part 1: {p1}')
-    print(f'Day {day_nr} part 2: {p2}')
+    maybe_newline = "\n" if isinstance(p2, str) else ""
+    print(f'Day {day_nr} part 2: {maybe_newline}{p2}')
     t0 = timeit.timeit('func(input_str)', number=1,
         globals={'func': day_module.run, 'input_str': inputs[day_nr-1]})
     N = int(1 / t0) + 1
@@ -43,7 +45,8 @@ def benchmark_day(day_nr, day_module):
 def run_day(day_nr, day_module):
     p1, p2 = day_module.run(inputs[day_nr-1])
     print(f'Day {day_nr} part 1: {p1}')
-    print(f'Day {day_nr} part 2: {p2}')
+    maybe_newline = "\n" if isinstance(p2, str) else ""
+    print(f'Day {day_nr} part 2: {maybe_newline}{p2}')
 
 def runall(run_fn):
     run_fn(1, day01)
@@ -58,6 +61,7 @@ def runall(run_fn):
     run_fn(10, day10)
     run_fn(11, day11)
     run_fn(12, day12)
+    run_fn(13, day13)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and '-B' == sys.argv[1]:
