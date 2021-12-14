@@ -60,7 +60,10 @@ run_and_time () {
     input_file="${2}"
     # Do a test run to cache the executable and get the result
     result=$($executable <$input_file 2>/dev/null)
-    if [[ -z $result ]]; then result="?"; fi
+    case "$result" in
+        "") result="[nothing]";;
+        *$'\n'*) result="[multiline]";;
+    esac
     # Do the time trial
     TIMEFMT="%*E"
     duration_1=$((time $executable <$input_file >/dev/null 2>&1) 2>&1)

@@ -90,6 +90,6 @@ int main ()
         }
     }
     
-    std::cerr << to_string(points);
+    std::cout << to_string(points);
     return 0;
 }

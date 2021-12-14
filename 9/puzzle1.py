@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 
-input_map = np.array([np.char.array(line.strip(), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
+input_map = np.array([np.char.array(line.strip().encode('us-ascii'), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
 h, w = input_map.shape
 heightmap = np.zeros((h+2, w+2), dtype='u1')
 heightmap += 9

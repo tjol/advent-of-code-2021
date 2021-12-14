@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import scipy.ndimage
 
-heightmap = np.array([np.char.array(line.strip(), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
+heightmap = np.array([np.char.array(line.strip().encode('us-ascii'), unicode=False).view('u1', np.ndarray) - ord('0') for line in sys.stdin if line])
 labels, n_features = scipy.ndimage.label(heightmap != 9)
 sizes = [np.count_nonzero(labels == i) for i in range(1, n_features+1)]
 sizes.sort()

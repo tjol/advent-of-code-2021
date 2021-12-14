@@ -55,7 +55,6 @@ struct CaveMap {
     caves: Vec<Cave>,
     start_idx: usize,
     end_idx: usize,
-    small_cave_twice_done: bool,
 }
 
 impl CaveMap {
@@ -97,7 +96,6 @@ impl CaveMap {
             caves,
             start_idx: start_idx.expect("there must be a start"),
             end_idx: end_idx.expect("there must be an end"),
-            small_cave_twice_done: false,
         }
     }
 
