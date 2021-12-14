@@ -28,6 +28,7 @@ import day10
 import day11
 import day12
 import day13
+import day14
 
 def benchmark_day(day_nr, day_module):
     p1, p2 = day_module.run(inputs[day_nr-1])
@@ -62,6 +63,7 @@ def runall(run_fn):
     run_fn(11, day11)
     run_fn(12, day12)
     run_fn(13, day13)
+    run_fn(14, day14)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and '-B' == sys.argv[1]:
