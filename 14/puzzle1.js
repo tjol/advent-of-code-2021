@@ -8,30 +8,43 @@ async function readAll(stream) {
     return Buffer.concat(chunks).toString('utf8')
 }
 
-function polymerizeOnce(polymer, rulebook) {
-    let result = [polymer[0]]
+function addToHist(hist, key, delta = 1) {
+    hist[key] = (hist[key] ?? 0) + delta
+}
 
-    for (let i = 1; i < polymer.length; ++i) {
-        const pair = polymer[i-1] + polymer[i]
+function polymerizeOnce(polymerPairs, rulebook) {
+    let result = {}
+
+    for (const [pair, count] of Object.entries(polymerPairs)) {
         const insertion = rulebook[pair]
-        if (insertion != undefined) {
-            result.push(insertion)
+        if (insertion == undefined) {
+            addToHist(result, pair, count)
+        } else {
+            addToHist(result, insertion[0], count)
+            addToHist(result, insertion[1], count)
         }
-        result.push(polymer[i])
     }
 
     return result
 }
 
-function computeHistogram(polymer) {
-    let hist = {}
-    for (const c of polymer) {
-        const n = hist[c]
-        if (n == undefined)
-            hist[c] = 1
-        else
-            hist[c] = n + 1
+function extractPairs(polymer) {
+    let pairHistogram = {}
+    for (let i = 0; i < polymer.length - 1; ++i) {
+        const pair = polymer[i] + polymer[i+1]
+        addToHist(pairHistogram, pair)
     }
+    return pairHistogram
+}
+
+function computeLetterFrequencies(polymerPairs, startLetter, endLetter) {
+    let hist = {[startLetter]: 0.5, [endLetter]: 0.5}
+
+    for (const [pair, count] of Object.entries(polymerPairs)) {
+        addToHist(hist, pair[0], count / 2)
+        addToHist(hist, pair[1], count / 2)
+    }
+
     return hist
 }
 
@@ -44,17 +57,19 @@ function computeHistogram(polymer) {
     let mapping = {}
     for (const line of lines.slice(2)) {
         const [from, to] = line.trim().split(' -> ')
-        mapping[from] = to
+        mapping[from] = [from[0] + to, to + from[1]]
     }
 
-    let polymer = template
-    for (let i = 0; i < 10; ++i)
-        polymer = polymerizeOnce(polymer, mapping)
+    let polymerPairs = extractPairs(template)
 
-    const histogram = computeHistogram(polymer)
+    for (let i = 0; i < 10; ++i) {
+        polymerPairs = polymerizeOnce(polymerPairs, mapping)
+    }
+
+    const histogram = computeLetterFrequencies(polymerPairs, template[0], template[template.length-1])
 
     let minLetter = null
-    let minCount = polymer.length
+    let minCount = Infinity
     let maxLetter = null
     let maxCount = 0
     for (const c in histogram) {

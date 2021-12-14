@@ -20,10 +20,8 @@ function polymerizeOnce(polymerPairs, rulebook) {
         if (insertion == undefined) {
             addToHist(result, pair, count)
         } else {
-            const left = pair[0] + insertion
-            const right = insertion + pair[1]
-            addToHist(result, left, count)
-            addToHist(result, right, count)
+            addToHist(result, insertion[0], count)
+            addToHist(result, insertion[1], count)
         }
     }
 
@@ -59,7 +57,7 @@ function computeLetterFrequencies(polymerPairs, startLetter, endLetter) {
     let mapping = {}
     for (const line of lines.slice(2)) {
         const [from, to] = line.trim().split(' -> ')
-        mapping[from] = to
+        mapping[from] = [from[0] + to, to + from[1]]
     }
 
     let polymerPairs = extractPairs(template)
