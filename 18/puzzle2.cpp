@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <utility>
@@ -191,7 +192,7 @@ int main()
     
     long max_sum = -1;
     for (size_t i = 0; i < numbers.size() - 1; ++i) {
-        for (size_t j = i; j < numbers.size(); ++j) {
+        for (size_t j = i+1; j < numbers.size(); ++j) {
             const auto& a = numbers[i];
             const auto& b = numbers[j];
             long sum1 = (a + b).magnitude();
