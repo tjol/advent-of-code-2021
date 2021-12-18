@@ -83,6 +83,10 @@ cd "$aocroot"
 
 dirs=($(print -l *(/) | egrep '[0-9]+' | sort -n))
 
+if [[ "$@" ]]; then
+    dirs=("$@")
+fi
+
 for d in $dirs; do
     print "++++ " Building day $d
     build $d
