@@ -1,5 +1,4 @@
 #include <array>
-#include <cmath>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -45,7 +44,7 @@ Snailfish::Snailfish(int8_t value)
 
 Snailfish& Snailfish::operator+=(const Snailfish& other)
 {
-    if (m_values[0] < 0) {
+    if (m_values[0] == -1) {
         // empty number!
         return (*this = other);
     }
@@ -83,14 +82,14 @@ reduce_loop:
 
     // Check for > 9
     for (size_t i = 0; i < 32; i += 2) {
-        if (m_values[i] > 9) {
+        auto val = m_values[i];
+        if (val > 9) {
             // split
-            float half = 0.5f * float(m_values[i]);
-            int8_t left = int8_t(std::floor(half));
-            int8_t right = int8_t(std::ceil(half));
+            int8_t left = val >> 1;
+            int8_t right = left + (val & 1);
 
             size_t step = 2;
-            while (i + step < 32 && m_values[i+step] < 0) step <<= 1;
+            while (i + step < 32 && m_values[i+step] == -1) step <<= 1;
             step >>= 1;
 
             m_values[i] = left;
@@ -130,17 +129,18 @@ long Snailfish::magnitude() const
 
 std::pair<Snailfish, Snailfish> Snailfish::split() const
 {
-    Snailfish a, b;
+    std::pair<Snailfish, Snailfish> res;
+    auto& [a, b] = res;
     for (size_t i = 0; i < 16; ++i) {
         a.m_values[i<<1] = m_values[i];
         b.m_values[i<<1] = m_values[16 + i];
     }
-    return {a, b};
+    return res;
 }
 
 bool Snailfish::is_single_number() const
 {
-    return std::all_of(m_values.begin() + 1, m_values.end(), [](auto v) { return v < 0; });
+    return m_values[16] == -1;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Snailfish& fish)
