@@ -3,6 +3,7 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 class Snailfish
 {
@@ -156,37 +157,23 @@ std::ostream& operator<<(std::ostream& stream, const Snailfish& fish)
 
 std::istream& operator>>(std::istream& stream, Snailfish& fish)
 {
-    int idx = 0;
-    int level = 0;
     int next_char;
-    bool finished = false;
-    while (!finished && (next_char = stream.peek()) != EOF) {
-        switch (next_char) {
-            case '[':
-                ++level;
-                stream.get();
-                break;
-            case ',':
-                stream.get();
-                break;
-            case ']':
-                --level;
-                stream.get();
-                if (level == 0) {
-                    finished = true;
-                }
-                break;
-            default: 
-                if (isspace(next_char)) {
-                    stream.get();
-                } else { // probably a number
-                    int val;
-                    stream >> val;
-                    fish.m_values[idx] = val;
-                    idx += 1 << (5 - level);
-                }
-                break;
-        }
+    while (isspace(next_char = stream.peek())) stream.get();
+    if (next_char == EOF) return stream;
+
+    if (next_char == '[') {
+        stream.get();
+        stream >> fish;
+        if (stream.get() != ',') throw std::runtime_error("syntax error");
+        Snailfish other;
+        stream >> other;
+        fish += other;
+        if (stream.get() != ']') throw std::runtime_error("syntax error");
+    } else {
+        // this better be a number
+        int val;
+        stream >> val;
+        fish = Snailfish(int8_t(val));
     }
 
     return stream;
