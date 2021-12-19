@@ -12,7 +12,7 @@ const MIN_EQUAL_DIST: usize = 10;
 #[derive(Debug, Clone)]
 struct ScannerPoints {
     points: Vec<Pt3f>,
-    sq_distance_map: Vec<HashMap<u32, HashSet<usize>>>,
+    sq_distance_map: Vec<HashMap<u32, Vec<usize>>>,
     uniq_dist_lists: Vec<Vec<u32>>,
 }
 
@@ -29,12 +29,12 @@ impl ScannerPoints {
                 let sq_dist = (p - q).norm_squared() as u32;
                 sq_distance_map[i]
                     .entry(sq_dist)
-                    .or_insert(HashSet::new())
-                    .insert(j);
+                    .or_insert(Vec::new())
+                    .push(j);
                 sq_distance_map[j]
                     .entry(sq_dist)
-                    .or_insert(HashSet::new())
-                    .insert(i);
+                    .or_insert(Vec::new())
+                    .push(i);
             }
         }
 
@@ -59,9 +59,9 @@ impl ScannerPoints {
     pub fn match_with(&self, other: &ScannerPoints) -> Vec<(usize, usize)> {
         let mut matches = vec![];
         for (i, my_dists) in self.uniq_dist_lists.iter().enumerate() {
-            // if matches.iter().filter(|(a, _)| *a == i).next().is_some() {
-            //     break;
-            // }
+            if matches.iter().filter(|(a, _)| *a == i).next().is_some() {
+                break;
+            }
             for (j, their_dists) in other.uniq_dist_lists.iter().enumerate() {
                 if matches.iter().filter(|(_, b)| *b == j).next().is_some() {
                     continue;
@@ -73,11 +73,8 @@ impl ScannerPoints {
                     match my_dists[k].cmp(&their_dists[l]) {
                         Ordering::Equal => {
                             matched_dists.push((
-                                *self.sq_distance_map[i][&my_dists[k]].iter().next().unwrap(),
-                                *other.sq_distance_map[j][&their_dists[l]]
-                                    .iter()
-                                    .next()
-                                    .unwrap(),
+                                self.sq_distance_map[i][&my_dists[k]][0],
+                                other.sq_distance_map[j][&their_dists[l]][0],
                             ));
                             k += 1;
                             l += 1;
@@ -93,6 +90,7 @@ impl ScannerPoints {
                 if matched_dists.len() >= MIN_EQUAL_DIST {
                     matches.push((i, j));
                     matches.extend_from_slice(&matched_dists);
+                    return matches;
                 }
             }
         }
