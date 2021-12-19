@@ -16,20 +16,12 @@ typedef struct step {
     int min_cost;
 } step_t;
 
-#define INVALID_STEP ((step_t){NOWHERE, NOWHERE, INT_MAX})
-
-typedef struct queue_link {
-    step_t step;
-    struct queue_link *prev;
-    struct queue_link *next;
-} queue_t;
-
 typedef struct cavern_search {
     int width, height;
     int *map;
-    queue_t *queue_array;
-    queue_t top_sentinel;
-    queue_t bottom_sentinel;
+    step_t *queue;
+    step_t *queue_head;
+    step_t **queue_refs;
     bool *found_array;
 } cavern_search_t;
 
@@ -108,70 +100,74 @@ cavern_search_t *init_cavern(FILE *input)
     int w = cavern->width;
     int h = cavern->height;
 
-    cavern->top_sentinel = (queue_t){INVALID_STEP, NULL, NULL};
-    cavern->bottom_sentinel = (queue_t){INVALID_STEP, NULL, NULL};
-    cavern->queue_array = malloc(sizeof(queue_t) * cavern->width * cavern->height);
-    for (int y = 0; y < cavern->height; ++y) {
-        for (int x = 0; x < cavern->width; ++x) {
-            queue_t *link = &cavern->queue_array[y * w + x];
-            link->step = (step_t){{x, y}, NOWHERE, INT_MAX};
-            link->prev = link - 1;
-            link->next = link + 1;
+    cavern->queue = malloc(sizeof(step_t) * w * h);
+    cavern->queue_head = cavern->queue;
+    cavern->queue_refs = malloc(sizeof(step_t*) * w * h);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            int idx = y * w + x;
+            step_t *queue_elem = &cavern->queue[idx];
+            cavern->queue_refs[idx] = queue_elem;
+            *queue_elem = (step_t){{x, y}, NOWHERE, INT_MAX};
         }
     }
-    cavern->queue_array[0].prev = &cavern->top_sentinel;
-    cavern->top_sentinel.next = &cavern->queue_array[0];
-    cavern->queue_array[0].step.min_cost = 0;
-    cavern->queue_array[w * h - 1].next = &cavern->bottom_sentinel;
-    cavern->bottom_sentinel.prev = &cavern->queue_array[w * h - 1];
-
-    cavern->found_array = calloc(w * h, sizeof(bool));
+    cavern->queue[0].min_cost = 0;
 
     return cavern;
 }
 
 void free_cavern(cavern_search_t *cavern)
 {
-    free(cavern->queue_array);
+    free(cavern->queue);
+    free(cavern->queue_refs);
     free(cavern->map);
     free(cavern);
 }
 
-void reinsert_queue_entry(cavern_search_t *cavern, queue_t *entry)
-{
-    // extract
-    entry->prev->next = entry->next;
-    entry->next->prev = entry->prev;
-    // reinsert, probably near the front
-    for (queue_t *other = cavern->top_sentinel.next; other != NULL; other = other->next) {
-        if (other->step.min_cost > entry->step.min_cost) {
-            other->prev->next = entry;
-            entry->prev = other->prev;
-            entry->next = other;
-            other->prev = entry;
-            return;
-        }
-    }
-}
-
-void set_reachable_from(cavern_search_t *cavern, queue_t *from_entry, point_t pos)
+void reorder_step(cavern_search_t *cavern, step_t *step)
 {
     int w = cavern->width;
-    int h = cavern->height;   
+    step_t s = *step;
+
+    for (;step != cavern->queue_head && (step - 1)->min_cost > s.min_cost; --step) {
+        // Special case: back of queue
+        if ((step - 1)->min_cost == INT_MAX) {
+            // fast forward to the back of the queue
+            step_t *p = cavern->queue_head;
+            for (; p->min_cost != INT_MAX; ++p);
+            *step = *p;
+            cavern->queue_refs[step->pos.y * w + step->pos.x] = step;
+            step = p + 1;
+            continue;
+        }
+        // Swap with previous
+        *step = *(step - 1);
+        // update ref array
+        cavern->queue_refs[step->pos.y * w + step->pos.x] = step;
+    }
+    *step = s;
+    cavern->queue_refs[s.pos.y * w + s.pos.x] = step;
+}
+
+void set_reachable_from(cavern_search_t *cavern, step_t *from_step, point_t pos)
+{
+    int w = cavern->width;
+    int h = cavern->height;
     if (pos.x < 0 || pos.y < 0 || pos.x >= w || pos.y >= h)
         return; // out of bounds
 
     int idx = pos.y * w + pos.x;
-    if (cavern->found_array[idx])
+    if (cavern->queue_refs[idx] < cavern->queue_head)
         return; // already found best route here
 
-    int new_cost = from_entry->step.min_cost + cavern->map[idx];
-    queue_t *entry = &cavern->queue_array[idx];
-    if (new_cost < entry->step.min_cost) {
+    int new_cost = from_step->min_cost + cavern->map[idx];
+    step_t *queue_elem = cavern->queue_refs[idx];
+
+    if (new_cost < queue_elem->min_cost) {
         // better than previously thought
-        entry->step.min_cost = new_cost;
-        entry->step.prev_step = from_entry->step.pos;
-        reinsert_queue_entry(cavern, entry);
+        queue_elem->min_cost = new_cost;
+        queue_elem->prev_step = from_step->pos;
+        reorder_step(cavern, queue_elem);
     }
     // else, there's nothing to do: we already had a better path to pos
 }
@@ -184,21 +180,17 @@ void find_safest_path(cavern_search_t *cavern)
     int h = cavern->height;
 
     for (;;) {
-        queue_t *this_entry = cavern->top_sentinel.next;
-        point_t pos = this_entry->step.pos;
-        // unlink
-        this_entry->prev->next = this_entry->next;
-        this_entry->next->prev = this_entry->prev;
-        cavern->found_array[pos.y * h + pos.x] = true;
+        step_t *this_step = cavern->queue_head++;
+        point_t pos = this_step->pos;
         // are we at the end?
         if (pos.x == w-1 && pos.y == h-1) {
             return;
         }
         // go through all the neighbours
-        set_reachable_from(cavern, this_entry, POINT(pos.x+1, pos.y));
-        set_reachable_from(cavern, this_entry, POINT(pos.x-1, pos.y));
-        set_reachable_from(cavern, this_entry, POINT(pos.x, pos.y+1));
-        set_reachable_from(cavern, this_entry, POINT(pos.x, pos.y-1));
+        set_reachable_from(cavern, this_step, POINT(pos.x+1, pos.y));
+        set_reachable_from(cavern, this_step, POINT(pos.x-1, pos.y));
+        set_reachable_from(cavern, this_step, POINT(pos.x, pos.y+1));
+        set_reachable_from(cavern, this_step, POINT(pos.x, pos.y-1));
     }
 }
 
@@ -243,7 +235,7 @@ int main ()
     find_safest_path(cavern);
     // print_path(cavern);
     
-    int cost = cavern->queue_array[cavern->width * cavern->height - 1].step.min_cost;
+    int cost = cavern->queue_refs[cavern->width * cavern->height - 1]->min_cost;
     printf("%d\n", cost);
 
     free_cavern(cavern);
