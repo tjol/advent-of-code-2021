@@ -91,7 +91,7 @@ void complete_map(int *map, int *tile, int tile_width, int tile_height)
 
 cavern_search_t *init_cavern(FILE *input)
 {
-    cavern_search_t *cavern = malloc(sizeof(cavern));
+    cavern_search_t *cavern = malloc(sizeof(cavern_search_t));
     int tile_width, tile_height;
     int *tile = read_map(input, &tile_width, &tile_height);
     if (tile == NULL) {

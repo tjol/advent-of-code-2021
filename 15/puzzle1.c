@@ -74,7 +74,7 @@ int *read_map(FILE *input, int *width_p, int *height_p)
 
 cavern_search_t *init_cavern(FILE *input)
 {
-    cavern_search_t *cavern = malloc(sizeof(cavern));
+    cavern_search_t *cavern = malloc(sizeof(cavern_search_t));
     cavern->map = read_map(input, &cavern->width, &cavern->height);
     if (cavern->map == NULL) {
         free(cavern);
