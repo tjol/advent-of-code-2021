@@ -162,12 +162,16 @@ fn main() {
     let mut transformations = HashMap::new();
     transformations.insert(0usize, Transform3::identity());
     let mut unsolved_indices: Vec<usize> = (1..scanner_points.len()).collect();
+    let mut impossible: HashSet<(usize, usize)> = HashSet::new();
 
     'solve_loop: while !unsolved_indices.is_empty() {
         for (meta_i, i) in unsolved_indices.clone().into_iter().enumerate() {
             // Try to match with each solved view
             let known_indices = transformations.keys().collect::<Vec<_>>();
             for j in known_indices {
+                if impossible.contains(&(i, *j)) {
+                    continue;
+                }
                 if let Some(trans) = scanner_points[i].get_transformation_onto(&scanner_points[*j])
                 {
                     // solved it!
@@ -176,6 +180,8 @@ fn main() {
                     transformations.insert(i, their_trans * trans);
                     unsolved_indices.swap_remove(meta_i);
                     continue 'solve_loop;
+                } else {
+                    impossible.insert((i, *j));
                 }
             }
         }
