@@ -105,7 +105,7 @@ impl ScannerPoints {
             return None;
         }
 
-        // get the centre of mass of the matched points
+        // get the matched points
         let our_points = matches
             .iter()
             .map(|(i, _)| self.points[*i])
