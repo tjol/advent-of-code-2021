@@ -54,19 +54,16 @@ impl GameState {
 
 fn cast_dice(player: usize, statespace: &HashMap<GameState, usize>) -> HashMap<GameState, usize> {
     let mut result = HashMap::new();
+    result.reserve(statespace.len());
 
     for (game_state, frequency) in statespace {
         match game_state.winner() {
             GameOutcome::NoWinnerYet => {
-                for die1 in 1..=3 {
-                    for die2 in 1..=3 {
-                        for die3 in 1..=3 {
-                            let roll = die1 + die2 + die3;
-                            let mut new_state = *game_state;
-                            new_state.players[player].roll(roll);
-                            *result.entry(new_state).or_default() += frequency;
-                        }
-                    }
+                for (roll, combinations) in [(3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1)]
+                {
+                    let mut new_state = *game_state;
+                    new_state.players[player].roll(roll);
+                    *result.entry(new_state).or_default() += combinations * frequency;
                 }
             }
             _ => {

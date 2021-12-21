@@ -15,4 +15,3 @@ path = "src/puzzle2.rs"
 
 [dependencies]
 hashbrown = "0.11.2"
-
