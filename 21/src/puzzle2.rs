@@ -18,6 +18,7 @@ impl Player {
         }
     }
 
+    #[inline(never)] // no idea why this helps but it does
     fn roll(&mut self, eyes: i32) {
         self.pos = (self.pos + eyes) % 10;
         self.score += self.pos + 1;
@@ -50,6 +51,18 @@ impl GameState {
         }
         GameOutcome::NoWinnerYet
     }
+
+    fn simplify_win(&self) -> GameState {
+        let mut res = GameState::new(0, 0);
+        if self.players[0].score >= WINNING_SCORE {
+            res.players[0].score = WINNING_SCORE;
+        } else if self.players[1].score >= WINNING_SCORE {
+            res.players[1].score = WINNING_SCORE;
+        } else {
+            panic!("simplify_win() called on active game")
+        }
+        res
+    }
 }
 
 fn cast_dice(player: usize, statespace: &HashMap<GameState, usize>) -> HashMap<GameState, usize> {
@@ -67,7 +80,7 @@ fn cast_dice(player: usize, statespace: &HashMap<GameState, usize>) -> HashMap<G
                 }
             }
             _ => {
-                *result.entry(*game_state).or_default() += frequency;
+                *result.entry(game_state.simplify_win()).or_default() += frequency;
             }
         }
     }
