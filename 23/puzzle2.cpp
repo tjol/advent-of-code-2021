@@ -374,7 +374,7 @@ int64_t search_for_solution(BurrowState initial_state)
         std::pop_heap(queue.begin(), queue.end(), priocmp);
         auto this_move = queue.back();
         queue.resize(queue.size() - 1);
-        discovered.insert(this_move.target_state);
+        if (!discovered.insert(this_move.target_state).second) continue;
         if (this_move.target_state.is_done()) {
             // YAY
             return this_move.cost;
